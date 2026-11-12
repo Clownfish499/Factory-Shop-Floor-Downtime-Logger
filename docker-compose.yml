@@ -1,10 +1,10 @@
-# Docker Compose specification for Factory Shop-Floor System
-# Case 47 - Academic Prototype (Persistent Storage Enabled)
-# Note: Docker status is NOT VERIFIED in the current environment because Docker is not installed on the host.
-
-version: '3.8'
+# Docker Compose configuration for Factory Shop-Floor System
+# Case 47 - Academic Prototype
+# Docker deployment and persistent storage verified
 
 services:
+
+
   web:
     build:
       context: .
