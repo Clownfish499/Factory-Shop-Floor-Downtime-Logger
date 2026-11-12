@@ -189,3 +189,11 @@ docker run -p 5000:5000 -v ${PWD}/data:/app/data factory-shopfloor-system
 docker compose up -d
 ```
 Access at `http://localhost:5000`.
+
+## Downtime Cost Calculation
+
+The system calculates estimated downtime cost using the formula:
+
+Downtime Cost = (Downtime Duration in Seconds / 3600) × ₹50,000
+
+This helps estimate the financial impact of machine stoppages.
