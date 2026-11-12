@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Machines - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Shop-Floor Machines (40 Units)</h1>
+    <p class="page-subtitle">Real-time status overview of all shop-floor workstations</p>
+  </div>
+  <div>
+    <a href="{{ url_for('downtime.start') }}" class="btn btn-danger">+ Record Downtime</a>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-header">
+    <h3>Machine Roster</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Machine ID</th>
+          <th>Machine Name</th>
+          <th>Workstation / Section</th>
+          <th>Current Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in machines %}
+        <tr>
+          <td><strong><a href="{{ url_for('machines.machine_details', machine_id=m.machine_id) }}">{{ m.machine_id }}</a></strong></td>
+          <td>{{ m.machine_name }}</td>
+          <td>{{ m.description }}</td>
+          <td>
+            {% if m.current_status == 'RUNNING' %}
+              <span class="status-badge status-running">RUNNING</span>
+            {% else %}
+              <span class="status-badge status-down">DOWN</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.current_status == 'RUNNING' %}
+              <a href="{{ url_for('downtime.start', machine_id=m.machine_id) }}" class="btn btn-danger btn-sm">Stop Machine</a>
+            {% else %}
+              <form class="resume-form" method="POST" action="{{ url_for('downtime.resume', machine_id=m.machine_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">Resume Machine</button>
+              </form>
+            {% endif %}
+            <a href="{{ url_for('machines.machine_details', machine_id=m.machine_id) }}" class="btn btn-secondary btn-sm" style="margin-left: 0.25rem;">Details</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

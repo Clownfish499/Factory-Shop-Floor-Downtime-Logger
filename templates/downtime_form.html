@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Record Machine Downtime{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Record Machine Stoppage</h1>
+    <p class="page-subtitle">Logs a STOP event and transitions machine status to DOWN</p>
+  </div>
+  <div>
+    <a href="{{ url_for('machines.list_machines') }}" class="btn btn-secondary">← Back</a>
+  </div>
+</div>
+
+<div class="form-card">
+  <form id="downtime-form" method="POST" action="{{ url_for('downtime.start') }}">
+    <div class="form-group">
+      <label for="machine_id">Target Machine <span style="color:#dc2626;">*</span></label>
+      <select id="machine_id" name="machine_id" class="form-control" data-testid="select-machine" required>
+        <option value="">-- Select a Machine --</option>
+        {% for m in machines %}
+          <option value="{{ m.machine_id }}" {% if preselected == m.machine_id %}selected{% endif %}>
+            {{ m.machine_id }} - {{ m.machine_name }} [Status: {{ m.current_status }}]
+          </option>
+        {% endfor %}
+      </select>
+      <div class="form-hint">Note: Machines already DOWN cannot have another open event recorded (BR-03).</div>
+    </div>
+
+    <div class="form-group">
+      <label for="reason">Stoppage Reason <span style="color:#dc2626;">*</span></label>
+      <textarea id="reason" name="reason" rows="3" class="form-control" data-testid="input-reason" placeholder="e.g. Spindle motor overheating, Tool replacement, Power trip" required>{{ reason or '' }}</textarea>
+      <div class="form-hint">Downtime reason is mandatory (BR-02).</div>
+    </div>
+
+    <div class="form-group">
+      <label for="work_order_id">Associated Work Order (Optional)</label>
+      <select id="work_order_id" name="work_order_id" class="form-control" data-testid="select-work-order">
+        <option value="">-- None (No Active Work Order) --</option>
+        {% for wo in work_orders %}
+          <option value="{{ wo.work_order_id }}">{{ wo.work_order_id }} - {{ wo.description }} ({{ wo.status }})</option>
+        {% endfor %}
+      </select>
+      <div class="form-hint">Work-order association is optional, but validated against database (BR-10).</div>
+    </div>
+
+    <div class="form-group">
+      <label for="timestamp">Start Timestamp (Optional)</label>
+      <input type="text" id="timestamp" name="timestamp" class="form-control" data-testid="input-timestamp" placeholder="Leave empty for current server time (YYYY-MM-DD HH:MM:SS)">
+      <div class="form-hint">Defaults to current time if left blank. Format: YYYY-MM-DD HH:MM:SS</div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+      <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" id="submit-downtime-btn" class="btn btn-danger" data-testid="btn-submit-stop">Confirm & Record STOP</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

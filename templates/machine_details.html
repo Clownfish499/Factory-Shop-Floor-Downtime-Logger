@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Machine {{ machine.machine_id }} Details{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ machine.machine_name }} ({{ machine.machine_id }})</h1>
+    <p class="page-subtitle">{{ machine.description }}</p>
+  </div>
+  <div>
+    <a href="{{ url_for('machines.list_machines') }}" class="btn btn-secondary">← Back to Machine List</a>
+  </div>
+</div>
+
+<div class="metrics-grid" style="margin-bottom: 1.5rem;">
+  <div class="metric-card">
+    <div class="metric-label">Status</div>
+    <div class="metric-value">
+      {% if machine.current_status == 'RUNNING' %}
+        <span class="status-badge status-running" style="font-size:1.1rem;">RUNNING</span>
+      {% else %}
+        <span class="status-badge status-down" style="font-size:1.1rem;">DOWN</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Registered At</div>
+    <div class="metric-value" style="font-size: 1.1rem; font-weight: 500; margin-top: 0.75rem;">{{ machine.created_at }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Immediate Action</div>
+    <div style="margin-top: 0.75rem;">
+      {% if machine.current_status == 'RUNNING' %}
+        <a href="{{ url_for('downtime.start', machine_id=machine.machine_id) }}" class="btn btn-danger">Stop Machine</a>
+      {% else %}
+        <form class="resume-form" method="POST" action="{{ url_for('downtime.resume', machine_id=machine.machine_id) }}">
+          <button type="submit" class="btn btn-success">Resume Machine</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if open_event %}
+<div class="table-card" style="border-left: 4px solid #f59e0b; margin-bottom: 1.5rem;">
+  <div class="table-header">
+    <h3 style="color: #b45309;">⚠️ Active Downtime Event (#{{ open_event.downtime_id }})</h3>
+  </div>
+  <div style="padding: 1.25rem;">
+    <p><strong>Reason:</strong> {{ open_event.reason }}</p>
+    <p><strong>Started At:</strong> {{ open_event.start_time }}</p>
+    <p><strong>Work Order:</strong> {{ open_event.work_order_id or 'None' }}</p>
+    <p><strong>Source:</strong> <code>{{ open_event.source }}</code></p>
+  </div>
+</div>
+{% endif %}
+
+<div class="table-card">
+  <div class="table-header">
+    <h3>Machine Downtime History</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Work Order</th>
+          <th>Reason</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Duration</th>
+          <th>Est. Cost</th>
+          <th>Status</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if history %}
+          {% for ev in history %}
+          <tr>
+            <td>#{{ ev.downtime_id }}</td>
+            <td>{{ ev.work_order_id or '-' }}</td>
+            <td>{{ ev.reason }}</td>
+            <td>{{ ev.start_time }}</td>
+            <td>{{ ev.end_time or '-' }}</td>
+            <td>{{ ev.duration_seconds | duration_fmt }}</td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span style="color:#d97706; font-style:italic;">Open</span>
+              {% else %}
+                <strong>{{ ev.estimated_cost | currency_inr }}</strong>
+              {% endif %}
+            </td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span class="status-badge status-open">OPEN</span>
+              {% else %}
+                <span class="status-badge status-closed">CLOSED</span>
+              {% endif %}
+            </td>
+            <td><code>{{ ev.source }}</code></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" class="empty-state">No downtime recorded for this machine.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

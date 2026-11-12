@@ -1,0 +1,24 @@
+# Docker Compose specification for Factory Shop-Floor System
+# Case 47 - Academic Prototype (Persistent Storage Enabled)
+# Note: Docker status is NOT VERIFIED in the current environment because Docker is not installed on the host.
+
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: factory-shopfloor-system:latest
+    container_name: shopfloor_web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=replace-with-a-secure-random-key-for-deployment
+      - DATABASE_PATH=/app/data/factory.db
+      - DOWNTIME_HOURLY_RATE=50000.0
+    volumes:
+      # Persistent bind mount for SQLite database across container restarts/rebuilds
+      - ./data:/app/data

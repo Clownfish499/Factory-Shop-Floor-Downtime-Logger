@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Simulator Console - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Machine Event Simulator Console</h1>
+    <p class="page-subtitle">Interactive testing bench to emit STOP and RESUME JSON payloads to <code>/api/simulator/events</code></p>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+  <!-- Simulation Form -->
+  <div class="form-card" style="margin: 0; max-width: 100%;">
+    <h3 style="margin-bottom: 1.25rem;">Emit Simulator Event</h3>
+
+    <div class="form-group">
+      <label for="sim_event_type">Event Type</label>
+      <select id="sim_event_type" class="form-control" onchange="toggleReasonField()">
+        <option value="STOP">STOP (Machine Stoppage)</option>
+        <option value="RESUME">RESUME (Machine Resumed)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="sim_machine_id">Target Machine</label>
+      <select id="sim_machine_id" class="form-control">
+        {% for m in machines %}
+          <option value="{{ m.machine_id }}">{{ m.machine_id }} - {{ m.machine_name }} [{{ m.current_status }}]</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group" id="reason_container">
+      <label for="sim_reason">Stoppage Reason <span style="color:#dc2626;">*</span></label>
+      <input type="text" id="sim_reason" class="form-control" value="Thermal cut-off trip" placeholder="Reason for STOP event">
+    </div>
+
+    <div class="form-group">
+      <label for="sim_work_order">Associated Work Order (Optional)</label>
+      <input type="text" id="sim_work_order" class="form-control" value="WO-1001" placeholder="e.g. WO-1001">
+    </div>
+
+    <div class="form-group">
+      <label for="sim_event_id">Event Identifier (Optional Idempotency Key)</label>
+      <input type="text" id="sim_event_id" class="form-control" placeholder="e.g. SIM-EVT-9001">
+    </div>
+
+    <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="sendSimulatorEvent()">
+      ⚡ Transmit Event to API
+    </button>
+  </div>
+
+  <!-- Live Response Console -->
+  <div class="table-card" style="margin: 0;">
+    <div class="table-header">
+      <h3>API Response Console</h3>
+      <span id="response_status_badge" class="badge" style="display:none; padding:0.2rem 0.5rem; border-radius:4px; font-weight:bold;"></span>
+    </div>
+    <div style="padding: 1.25rem;">
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">Target Endpoint: <code>POST /api/simulator/events</code></p>
+      <pre id="api_response_box" style="background:#0f172a; color:#38bdf8; padding:1rem; border-radius:6px; font-size:0.85rem; overflow-x:auto; min-height: 250px;">Waiting for event submission...</pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleReasonField() {
+    const type = document.getElementById("sim_event_type").value;
+    const rc = document.getElementById("reason_container");
+    rc.style.display = (type === "STOP") ? "block" : "none";
+}
+
+async function sendSimulatorEvent() {
+    const eventType = document.getElementById("sim_event_type").value;
+    const machineId = document.getElementById("sim_machine_id").value;
+    const reason = document.getElementById("sim_reason").value;
+    const workOrderId = document.getElementById("sim_work_order").value.trim() || null;
+    const eventId = document.getElementById("sim_event_id").value.trim() || null;
+    const nowIso = new Date().toISOString().slice(0, 19);
+
+    const payload = {
+        event_type: eventType,
+        machine_id: machineId,
+        timestamp: nowIso,
+        source: "SIMULATOR"
+    };
+
+    if (eventType === "STOP") {
+        payload.reason = reason;
+        if (workOrderId) payload.work_order_id = workOrderId;
+    }
+    if (eventId) {
+        payload.event_id = eventId;
+    }
+
+    const respBox = document.getElementById("api_response_box");
+    const statusBadge = document.getElementById("response_status_badge");
+    respBox.textContent = "Transmitting payload: \n" + JSON.stringify(payload, null, 2) + "\n\nWaiting for response...";
+
+    try {
+        const response = await fetch("/api/simulator/events", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        respBox.textContent = `HTTP Status: ${response.status} ${response.statusText}\n\n` + JSON.stringify(data, null, 2);
+
+        statusBadge.style.display = "inline";
+        if (response.ok) {
+            statusBadge.textContent = "SUCCESS " + response.status;
+            statusBadge.style.background = "#dcfce7";
+            statusBadge.style.color = "#166534";
+        } else {
+            statusBadge.textContent = "ERROR " + response.status;
+            statusBadge.style.background = "#fee2e2";
+            statusBadge.style.color = "#991b1b";
+        }
+    } catch (err) {
+        respBox.textContent = "Network Error: " + err.message;
+        statusBadge.style.display = "inline";
+        statusBadge.textContent = "FAILED";
+        statusBadge.style.background = "#fee2e2";
+        statusBadge.style.color = "#991b1b";
+    }
+}
+</script>
+{% endblock %}

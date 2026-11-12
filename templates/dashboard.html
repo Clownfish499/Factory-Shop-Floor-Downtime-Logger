@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Shop-Floor Executive Dashboard</h1>
+    <p class="page-subtitle">Real-time status monitoring for 40 factory workstations and downtime costs</p>
+  </div>
+  <div>
+    <a href="{{ url_for('downtime.start') }}" class="btn btn-danger">+ Record Machine Stoppage</a>
+  </div>
+</div>
+
+<!-- Key Performance Metrics Grid -->
+<div class="metrics-grid">
+  <div class="metric-card" data-testid="metric-total-machines">
+    <div class="metric-label">Total Machines</div>
+    <div class="metric-value">{{ metrics.total_machines }}</div>
+    <div class="metric-sub">Shop-Floor Workstations</div>
+  </div>
+
+  <div class="metric-card" data-testid="metric-running-machines">
+    <div class="metric-label">Running Machines</div>
+    <div class="metric-value" style="color: #16a34a;">{{ metrics.running_machines }}</div>
+    <div class="metric-sub">Operational status</div>
+  </div>
+
+  <div class="metric-card" data-testid="metric-down-machines">
+    <div class="metric-label">Down Machines</div>
+    <div class="metric-value" style="color: #dc2626;">{{ metrics.down_machines }}</div>
+    <div class="metric-sub">Requiring attention</div>
+  </div>
+
+  <div class="metric-card" data-testid="metric-open-events">
+    <div class="metric-label">Open Stoppages</div>
+    <div class="metric-value" style="color: #d97706;">{{ metrics.open_events_count }}</div>
+    <div class="metric-sub">Active downtime events</div>
+  </div>
+
+  <div class="metric-card" style="grid-column: span 2;" data-testid="metric-estimated-cost">
+    <div class="metric-label">Estimated Downtime Cost (Closed)</div>
+    <div class="metric-value" style="color: #1e3a8a;">{{ metrics.total_estimated_cost | currency_inr }}</div>
+    <div class="metric-sub">Based on standard rate of Rs. 50,000/hr (Total elapsed: {{ metrics.total_duration_seconds | duration_fmt }})</div>
+  </div>
+</div>
+
+<!-- Active Downtimes / Quick Resume Section -->
+{% if metrics.down_machines > 0 %}
+<div class="table-card" style="border-left: 4px solid #dc2626;">
+  <div class="table-header">
+    <h3 style="color: #991b1b;">⚠️ Currently Stopped Machines</h3>
+    <span class="badge" style="background:#fee2e2; color:#991b1b; padding:0.2rem 0.6rem; border-radius:4px; font-weight:600; font-size:0.8rem;">
+      Action Required
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Machine ID</th>
+          <th>Machine Name</th>
+          <th>Current Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in machines %}
+          {% if m.current_status == 'DOWN' %}
+          <tr>
+            <td><strong><a href="{{ url_for('machines.machine_details', machine_id=m.machine_id) }}">{{ m.machine_id }}</a></strong></td>
+            <td>{{ m.machine_name }}</td>
+            <td><span class="status-badge status-down">DOWN</span></td>
+            <td>
+              <form class="resume-form" method="POST" action="{{ url_for('downtime.resume', machine_id=m.machine_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">▶ Resume Machine</button>
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Downtime Events -->
+<div class="table-card">
+  <div class="table-header">
+    <h3>Recent Downtime Logs</h3>
+    <a href="{{ url_for('downtime.history') }}" class="btn btn-secondary btn-sm">View Full History</a>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Machine</th>
+          <th>Reason</th>
+          <th>Start Time</th>
+          <th>Duration</th>
+          <th>Estimated Cost</th>
+          <th>Status</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if metrics.recent_events %}
+          {% for ev in metrics.recent_events %}
+          <tr>
+            <td>#{{ ev.downtime_id }}</td>
+            <td><strong>{{ ev.machine_id }}</strong> - {{ ev.machine_name }}</td>
+            <td>{{ ev.reason }}</td>
+            <td>{{ ev.start_time }}</td>
+            <td>{{ ev.duration_seconds | duration_fmt }}</td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span style="color: #d97706; font-style: italic;">In Progress</span>
+              {% else %}
+                <strong>{{ ev.estimated_cost | currency_inr }}</strong>
+              {% endif %}
+            </td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span class="status-badge status-open">OPEN</span>
+              {% else %}
+                <span class="status-badge status-closed">CLOSED</span>
+              {% endif %}
+            </td>
+            <td><code>{{ ev.source }}</code></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" class="empty-state">No downtime recorded yet. All 40 machines are running normally.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

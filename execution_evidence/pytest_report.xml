@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="1.036" timestamp="2026-11-11T20:19:40.092522+05:30" hostname="LAPTOP-F0GQCSF7"><testcase classname="" name="test_results.txt" time="0.000"><error message="collection failure">C:\Program Files\Python313\Lib\pathlib\_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python313\Lib\pathlib\_abc.py:633: in read_text
+    return f.read()
+           ^^^^^^^^
+&lt;frozen codecs&gt;:325: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte</error></testcase></testsuite></testsuites>

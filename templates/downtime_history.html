@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Downtime History - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Downtime Logs & History</h1>
+    <p class="page-subtitle">Complete audit trail of all manual and simulated machine stoppage events</p>
+  </div>
+  <div>
+    <a href="{{ url_for('downtime.start') }}" class="btn btn-danger">+ Record Stoppage</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<form id="filter-form" method="GET" action="{{ url_for('downtime.history') }}" class="filter-bar">
+  <div class="filter-item">
+    <label for="machine_id">Filter by Machine</label>
+    <select name="machine_id" id="machine_id" data-testid="filter-machine" class="form-control" style="min-width: 180px;">
+      <option value="">All Machines</option>
+      {% for m in machines %}
+        <option value="{{ m.machine_id }}" {% if selected_machine == m.machine_id %}selected{% endif %}>
+          {{ m.machine_id }} - {{ m.machine_name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-item">
+    <label for="status">Event Status</label>
+    <select name="status" id="status" data-testid="filter-status" class="form-control" style="min-width: 140px;">
+      <option value="">All Statuses</option>
+      <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>OPEN</option>
+      <option value="CLOSED" {% if selected_status == 'CLOSED' %}selected{% endif %}>CLOSED</option>
+    </select>
+  </div>
+
+  <div class="filter-item">
+    <label for="start_date">From Date</label>
+    <input type="date" name="start_date" id="start_date" data-testid="filter-start-date" class="form-control" value="{{ start_date }}">
+  </div>
+
+  <div class="filter-item">
+    <label for="end_date">To Date</label>
+    <input type="date" name="end_date" id="end_date" data-testid="filter-end-date" class="form-control" value="{{ end_date }}">
+  </div>
+
+  <div class="filter-item">
+    <button type="submit" id="btn-apply-filters" data-testid="btn-apply-filters" class="btn btn-primary">Apply Filters</button>
+  </div>
+  <div class="filter-item">
+    <a href="{{ url_for('downtime.history') }}" id="btn-reset-filters" data-testid="btn-reset-filters" class="btn btn-secondary">Reset</a>
+  </div>
+</form>
+
+<div class="table-card">
+  <div class="table-header">
+    <h3>Filtered Downtime Logs ({{ logs|length }} records)</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Machine</th>
+          <th>Work Order</th>
+          <th>Reason</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Duration</th>
+          <th>Estimated Cost</th>
+          <th>Status</th>
+          <th>Source</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if logs %}
+          {% for ev in logs %}
+          <tr>
+            <td>#{{ ev.downtime_id }}</td>
+            <td><strong>{{ ev.machine_id }}</strong><br><small style="color:var(--text-muted)">{{ ev.machine_name }}</small></td>
+            <td>{{ ev.work_order_id or '-' }}</td>
+            <td>{{ ev.reason }}</td>
+            <td>{{ ev.start_time }}</td>
+            <td>{{ ev.end_time or '-' }}</td>
+            <td>{{ ev.duration_seconds | duration_fmt }}</td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span style="color:#d97706; font-style:italic;">Open (Pending)</span>
+              {% else %}
+                <strong>{{ ev.estimated_cost | currency_inr }}</strong>
+              {% endif %}
+            </td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <span class="status-badge status-open">OPEN</span>
+              {% else %}
+                <span class="status-badge status-closed">CLOSED</span>
+              {% endif %}
+            </td>
+            <td><code>{{ ev.source }}</code></td>
+            <td>
+              {% if ev.event_status == 'OPEN' %}
+                <form class="resume-form" method="POST" action="{{ url_for('downtime.resume', machine_id=ev.machine_id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-success btn-sm">Resume</button>
+                </form>
+              {% else %}
+                <span style="color:var(--text-muted); font-size:0.8rem;">Finished</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="11" class="empty-state">No downtime records match the chosen filter criteria.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

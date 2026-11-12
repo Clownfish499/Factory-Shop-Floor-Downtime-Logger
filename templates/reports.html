@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Downtime Reports & Analysis - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Shop-Floor Downtime & Cost Reports</h1>
+    <p class="page-subtitle">Pareto analysis by machine and stoppage root causes</p>
+  </div>
+</div>
+
+<!-- Date Filter Form -->
+<form method="GET" action="{{ url_for('reports.index') }}" class="filter-bar">
+  <div class="filter-item">
+    <label for="start_date">Start Date</label>
+    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+  </div>
+  <div class="filter-item">
+    <label for="end_date">End Date</label>
+    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+  </div>
+  <div class="filter-item">
+    <button type="submit" class="btn btn-primary">Filter Reports</button>
+  </div>
+  <div class="filter-item">
+    <a href="{{ url_for('reports.index') }}" class="btn btn-secondary">Reset</a>
+  </div>
+</form>
+
+<!-- Overall Metrics -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-label">Total Closed Incidents</div>
+    <div class="metric-value">{{ summary.total_events }}</div>
+    <div class="metric-sub">Resolved downtime logs</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Total Downtime Elapsed</div>
+    <div class="metric-value" style="color: #4338ca;">{{ summary.total_duration_seconds | duration_fmt }}</div>
+    <div class="metric-sub">Total operational delay</div>
+  </div>
+  <div class="metric-card" style="grid-column: span 2;">
+    <div class="metric-label">Estimated Financial Impact</div>
+    <div class="metric-value" style="color: #dc2626;">{{ summary.total_cost | currency_inr }}</div>
+    <div class="metric-sub">Calculated at standard case rate of Rs. 50,000 per hour</div>
+  </div>
+</div>
+
+<!-- Group By Machine -->
+<div class="table-card">
+  <div class="table-header">
+    <h3>Downtime Breakdown by Machine</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Machine ID</th>
+          <th>Machine Name</th>
+          <th>Incident Count</th>
+          <th>Total Duration</th>
+          <th>Estimated Loss (Rs.)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if summary.by_machine %}
+          {% for row in summary.by_machine %}
+          <tr>
+            <td><strong><a href="{{ url_for('machines.machine_details', machine_id=row.machine_id) }}">{{ row.machine_id }}</a></strong></td>
+            <td>{{ row.machine_name }}</td>
+            <td>{{ row.event_count }}</td>
+            <td>{{ row.total_duration_seconds | duration_fmt }}</td>
+            <td><strong>{{ row.total_cost | currency_inr }}</strong></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" class="empty-state">No closed downtime data available for the selected period.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Group By Reason -->
+<div class="table-card">
+  <div class="table-header">
+    <h3>Root Cause Breakdown by Stoppage Reason</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Downtime Reason</th>
+          <th>Incident Count</th>
+          <th>Total Duration</th>
+          <th>Estimated Loss (Rs.)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if summary.by_reason %}
+          {% for row in summary.by_reason %}
+          <tr>
+            <td><strong>{{ row.reason }}</strong></td>
+            <td>{{ row.event_count }}</td>
+            <td>{{ row.total_duration_seconds | duration_fmt }}</td>
+            <td><strong>{{ row.total_cost | currency_inr }}</strong></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" class="empty-state">No downtime reasons logged yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

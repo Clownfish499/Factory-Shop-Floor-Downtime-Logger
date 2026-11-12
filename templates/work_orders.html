@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Work Orders - Factory Shop-Floor System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Shop-Floor Work Orders</h1>
+    <p class="page-subtitle">Production orders associated with machine operations and downtime</p>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-header">
+    <h3>Registered Work Orders</h3>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Work Order ID</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>Created Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if work_orders %}
+          {% for wo in work_orders %}
+          <tr>
+            <td><strong>{{ wo.work_order_id }}</strong></td>
+            <td>{{ wo.description }}</td>
+            <td>
+              <span class="status-badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">
+                {{ wo.status }}
+              </span>
+            </td>
+            <td>{{ wo.created_at }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" class="empty-state">No work orders registered.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
